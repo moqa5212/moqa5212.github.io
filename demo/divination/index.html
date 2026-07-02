@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>周易六爻预测占卜</title>
+    <style>
+        :root {
+            --bg-color: #f4f1ea;
+            --text-color: #2c2c2c;
+            --primary-color: #8c2d19;
+            --border-color: #d1c7bd;
+            --yang-color: #333;
+            --yin-color: #333;
+            --change-color: #b13b22;
+        }
+
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+
+        .intro {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.6;
+            background: #fcfbfa;
+            padding: 15px;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 25px;
+        }
+
+        /* 投掷区域 */
+        .action-area {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #6b2011;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* 硬币动画区域 */
+        .coins-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            height: 60px;
+        }
+
+        .coin {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #e6c280;
+            border: 2px solid #b58d3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+
+        .coin.rolling {
+            animation: spin 0.2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        /* 卦象显示区域 */
+        .gua-display {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .gua-box {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 6px;
+            background: #fbfbfa;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column-reverse; /* 从下往上排初爻到上爻 */
+        }
+
+        .gua-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            order: 10; /* 确保标题在最上方 */
+        }
+
+        /* 爻的样式 */
+        .yao-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0;
+            height: 24px;
+        }
+
+        .yao-name {
+            font-size: 0.85rem;
+            color: #777;
+            width: 40px;
+        }
+
+        .yao-line {
+            display: flex;
+            justify-content: space-between;
+            width: 120px;
+            height: 12px;
+        }
+
+        /* 阳爻 */
+        .line-yang {
+            width: 120px;
+            background-color: var(--yang-color);
+        }
+
+        /* 阴爻 */
+        .line-yin {
+            width: 52px;
+            background-color: var(--yin-color);
+        }
+
+        .yao-type {
+            font-size: 0.85rem;
+            width: 40px;
+            text-align: right;
+        }
+
+        .is-change {
+            color: var(--change-color);
+            font-weight: bold;
+        }
+
+        /* 结果解析 */
+        .result-panel {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0eae1;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .result-panel p {
+            line-height: 1.8;
+        }
+    </style>
+    
+</head>
+<body>
+
+<div class="container">
+    <h1>周易六爻·三钱法占卜</h1>
+    
+    <div class="intro">
+        <strong>占卜原则：</strong> 心诚则灵，无事不占。请在心中默念你所求问之事（如事业、感情、出行等），然后点击“虔诚摇卦”按钮。共需投掷 <strong>6次</strong>，从下往上（初爻至上爻）生成卦象。<br>
+        <strong>硬币说明：</strong> 字为交（阴/背面），无字/花为元（阳/正面）。
+    </div>
+
+    <div class="action-area">
+        <h3 id="step-hint">第一步：请诚心默念所求之事，开始摇卦</h3>
+        <div class="coins-container">
+            <div class="coin" id="coin1">字</div>
+            <div class="coin" id="coin2">字</div>
+            <div class="coin" id="coin3">字</div>
+        </div>
+        <button class="btn" id="shake-btn" onclick="shakeCoins()">虔诚摇卦 (0/6)</button>
+        <button class="btn" id="reset-btn" style="background-color:#666; display:none;" onclick="resetAll()">重新占卜</button>
+    </div>
+
+    <div class="gua-display" id="gua-display-area" style="display: none;">
+        <!-- 本卦 -->
+        <div class="gua-box" id="ben-gua">
+            <div class="gua-title" id="ben-title">本卦（当前境遇）</div>
+        </div>
+        <!-- 变卦 -->
+        <div class="gua-box" id="bian-gua" style="display: none;">
+            <div class="gua-title" id="bian-title">变卦（未来发展）</div>
+        </div>
+    </div>
+
+    <div class="result-panel" id="result-panel">
+        <h2>【断卦参考】</h2>
+        <div id="result-text"></div>
+    </div>
+</div>
+
+<script>
+    // 基础八卦数据
+    const BAGUA = {
+        '111': '乾为天', '011': '兑为泽', '101': '离为火', '001': '震为雷',
+        '110': '巽为风', '010': '坎为水', '100': '艮为山', '000': '坤为地'
+    };
+
+    // 简易六十四卦名称映射（示例提供部分核心卦，实际可扩展完整版）
+    function getGuaName(code) {
+        // 简易推导：前三位为上卦，后三位为下卦（或者相反，这里采用标准初爻在下）
+        // 实际开发可在此处扩展64卦全名，此处给出一个通用的阴阳符号组合识别
+        const up = code.substring(3, 6);
+        const down = code.substring(0, 3);
+        const upName = BAGUA[up] ? BAGUA[up].split('为')[1] : '';
+        const downName = BAGUA[down] ? BAGUA[down].split('为')[1] : '';
+        
+        if(up === down) return BAGUA[up];
+        return `${upName}${downName}卦`;
+    }
+
+    const YAO_NAMES = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"];
+    let recordYao = []; // 记录每一次摇出的结果
+
+    function shakeCoins() {
+        if (recordYao.length >= 6) return;
+
+        const btn = document.getElementById('shake-btn');
+        btn.disabled = true;
+
+        // 播放摇晃动画
+        const coins = document.querySelectorAll('.coin');
+        coins.forEach(coin => coin.classList.add('rolling'));
+
+        setTimeout(() => {
+            // 停止动画并计算随机结果 (0代表字/背面/阴，1代表花/正面/阳)
+            // 三钱法：
+            // 3个正面(1,1,1) -> 老阳 (○) -> 本卦为阳，变卦为阴
+            // 3个背面(0,0,0) -> 老阴 (×) -> 本卦为阴，变卦为阳
+            // 2正1背(1,1,0)  -> 少阴 (--) -> 本卦阴，不变
+            // 1正2背(1,0,0)  -> 少阳 (—) -> 本卦阳，不变
+            
+            let c1 = Math.floor(Math.random() * 2);
+            let c2 = Math.floor(Math.random() * 2);
+            let c3 = Math.floor(Math.random() * 2);
+
+            document.getElementById('coin1').innerText = c1 === 1 ? '花' : '字';
+            document.getElementById('coin2').innerText = c2 === 1 ? '花' : '字';
+            document.getElementById('coin3').innerText = c3 === 1 ? '花' : '字';
+
+            coins.forEach(coin => coin.classList.remove('rolling'));
+
+            let sum = c1 + c2 + c3; 
+            let yaoResult = {};
+
+            if (sum === 3) {
+                yaoResult = { ben: 1, bian: 0, type: "老阳 ○", isChange: true };
+            } else if (sum === 0) {
+                yaoResult = { ben: 0, bian: 1, type: "老阴 ×", isChange: true };
+            } else if (sum === 2) {
+                yaoResult = { ben: 0, bian: 0, type: "少阴 --", isChange: false };
+            } else if (sum === 1) {
+                yaoResult = { ben: 1, bian: 1, type: "少阳 —", isChange: false };
+            }
+
+            recordYao.push(yaoResult);
+            renderGua();
+
+            // 更新状态
+            let count = recordYao.length;
+            btn.innerText = `虔诚摇卦 (${count}/6)`;
+            
+            if (count < 6) {
+                document.getElementById('step-hint').innerText = `已完成第 ${count} 爻，请继续摇卦`;
+                btn.disabled = false;
+            } else {
+                document.getElementById('step-hint').innerText = `六爻已满，合集成卦！`;
+                btn.style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'inline-block';
+                analyzeResult();
+            }
+
+        }, 800);
+    }
+
+    function renderGua() {
+        document.getElementById('gua-display-area').style.display = 'flex';
+        
+        const benBox = document.getElementById('ben-gua');
+        const bianBox = document.getElementById('bian-gua');
+        
+        // 清理旧的爻，保留标题
+        benBox.innerHTML = '<div class="gua-title" id="ben-title">本卦（当前境遇）</div>';
+        bianBox.innerHTML = '<div class="gua-title" id="bian-title">变卦（未来发展）</div>';
+
+        let hasChange = false;
+
+        recordYao.forEach((yao, index) => {
+            if(yao.isChange) hasChange = true;
+
+            // 渲染本卦
+            benBox.appendChild(createYaoRow(index, yao.ben, yao.type, yao.isChange));
+            // 渲染变卦
+            bianBox.appendChild(createYaoRow(index, yao.bian, yao.isChange ? (yao.bian === 1 ? "少阳 —" : "少阴 --") : yao.type, false));
+        });
+
+        if (hasChange) {
+            bianBox.style.display = 'flex';
+        }
+    }
+
+    function createYaoRow(index, bit, typeStr, isChange) {
+        const row = document.createElement('div');
+        row.className = 'yao-row';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'yao-name';
+        nameSpan.innerText = YAO_NAMES[index];
+        
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line-line';
+        if (bit === 1) {
+            // 阳爻
+            lineDiv.innerHTML = '<div class="line-yang"></div>';
+        } else {
+            // 阴爻
+            lineDiv.innerHTML = '<div class="line-yin"></div><div class="line-yin"></div>';
+        }
+        
+        const typeSpan = document.createElement('span');
+        typeSpan.className = 'yao-type' + (isChange ? ' is-change' : '');
+        typeSpan.innerText = typeStr;
+
+        row.appendChild(nameSpan);
+        row.appendChild(lineDiv);
+        row.appendChild(typeSpan);
+        return row;
+    }
+
+    function analyzeResult() {
+        const resultPanel = document.getElementById('result-panel');
+        const resultText = document.getElementById('result-text');
+        resultPanel.style.display = 'block';
+
+        let benCode = recordYao.map(y => y.ben).join('');
+        let bianCode = recordYao.map(y => y.bian).join('');
+        
+        let changeCount = recordYao.filter(y => y.isChange).length;
+        
+        let analysis = `<strong>本卦卦象：</strong> ${getGuaName(benCode)}<br>`;
+        if(changeCount > 0) {
+            analysis += `<strong>变卦卦象：</strong> ${getGuaName(bianCode)}<br><br>`;
+        } else {
+            analysis += `<strong>变卦卦象：</strong> 无变爻，静卦。<br><br>`;
+        }
+
+        analysis += `<strong>朱熹六爻断卦核心原则参考：</strong><br>`;
+        
+        // 朱熹断卦法逻辑推导
+        switch(changeCount) {
+            case 0:
+                analysis += `➔ <strong>六爻皆静（无变爻）：</strong> 以<strong>本卦卦辞</strong>占之，看当前大势。`;
+                break;
+            case 1:
+                let cIndex = recordYao.findIndex(y => y.isChange);
+                analysis += `➔ <strong>一个变爻：</strong> 以<strong>本卦变爻的爻辞</strong>占之。请着重查看本卦的【${YAO_NAMES[cIndex]}】爻辞。`;
+                break;
+            case 2:
+                analysis += `➔ <strong>两个变爻：</strong> 以<strong>本卦两个变爻的爻辞</strong>占之，且以<strong>位置靠上</strong>的变爻爻辞为主。`;
+                break;
+            case 3:
+                analysis += `➔ <strong>三个变爻：</strong> 以<strong>本卦卦辞</strong>和<strong>变卦卦辞</strong>综合占之，本卦为体（当下），变卦为用（未来）。`;
+                break;
+            case 4:
+                analysis += `➔ <strong>四个变爻：</strong> 以<strong>变卦中不变的两个爻辞</strong>占之，且以<strong>位置靠下</strong>的不变爻爻辞为主。`;
+                break;
+            case 5:
+                let ncIndex = recordYao.findIndex(y => !y.isChange);
+                analysis += `➔ <strong>五个变爻：</strong> 以<strong>变卦中那个不变的爻辞</strong>占之。请查看变卦的【${YAO_NAMES[ncIndex]}】爻辞。`;
+                break;
+            case 6:
+                analysis += `➔ <strong>六爻皆变：</strong> 如果是乾坤两卦，以“用九”、“用六”断卦；其余卦则直接以<strong>变卦的卦辞</strong>占之。`;
+                break;
+        }
+
+        analysis += `<br><br><small style="color:#777;">*注：由于周易六十四卦卦辞及三百八十四爻爻辞篇幅宏大，建议您根据上面推导出的核心爻位，自行查阅《易经》原文以获得最精准的启示。</small>`;
+        
+        resultText.innerHTML = analysis;
+    }
+
+    function resetAll() {
+        recordYao = [];
+        document.getElementById('shake-btn').style.display = 'inline-block';
+        document.getElementById('shake-btn').disabled = false;
+        document.getElementById('shake-btn').innerText = `虔诚摇卦 (0/6)`;
+        document.getElementById('reset-btn').style.display = 'none';
+        document.getElementById('step-hint').innerText = `第一步：请诚心默念所求之事，开始摇卦`;
+        document.getElementById('gua-display-area').style.display = 'none';
+        document.getElementById('result-panel').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新标签页</title>
+    <style>
+        :root {
+            --panel-bg: rgba(255, 255, 255, 0.42); 
+            --panel-border: rgba(255, 255, 255, 0.5);
+            --text-main: #333333; 
+            --text-muted: #6e6e73;
+            --accent-color: #007aff; 
+            --blur-strength: 30px; 
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: #f5f5f7;
+            background-image: url('https://cdn.jsdelivr.net/gh/moqa5212/EiraGallery@main/imgs/20260617231322086.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .hidden-file-input { display: none !important; }
+
+        .top-wallpaper-btn {
+            position: fixed;
+            top: 24px;
+            right: 28px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .top-wallpaper-btn:hover { opacity: 1; transform: scale(1.1); }
+        .top-wallpaper-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2;
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,0.3));
+        }
+
+        .main-layout {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; 
+            align-items: center;
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 21vh 20px 40px 20px; 
+            z-index: 10;
+        }
+
+        .header-text-area {
+            text-align: center;
+            margin-bottom: 28px;
+            user-select: none;
+        }
+        .main-welcome-title {
+            font-size: 2.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            margin-bottom: 12px;
+        }
+        .sub-poem-line {
+            font-size: 0.92rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-wrapper {
+            max-width: 680px;
+            width: 100%;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        .search-container {
+            background: #ffffff; 
+            border-radius: 30px; 
+            padding: 12px 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+            display: flex;
+            align-items: center;
+            transition: box-shadow 0.3s;
+        }
+        .search-container:focus-within { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28); }
+
+        .search-engine-selector {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding-right: 14px;
+            border-right: 1px solid rgba(0, 0, 0, 0.08);
+            user-select: none;
+        }
+        .current-engine-icon {
+            width: 22px;
+            height: 22px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        .arrow-down-icon { font-size: 0.55rem; color: #999; transform: scale(0.8); }
+
+        .search-input-cell { flex: 1; padding-left: 14px; }
+        .search-input-cell input {
+            width: 100%;
+            background: none;
+            border: none;
+            outline: none;
+            color: #333333; 
+            font-size: 1.05rem;
+        }
+
+        .search-submit-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
+        .search-submit-btn svg { width: 20px; height: 20px; fill: none; stroke: #a0a0a0; stroke-width: 2.5; }
+
+		 /* 极致通透：搜索引擎下拉菜单 */
+        .horizontal-engine-menu {
+            position: absolute;
+            top: 68px; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 16px 24px;
+            backdrop-filter: blur(var(--blur-strength));
+            -webkit-backdrop-filter: blur(var(--blur-strength));
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: none; gap: 20px; flex-wrap: wrap;
+        }
+        .horizontal-engine-menu.show { display: flex; }
+
+        .engine-grid-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; width: 64px; position: relative; }
+        .engine-delete-badge {
+            position: absolute; top: -4px; right: 4px; width: 16px; height: 16px;
+            background: rgba(239, 68, 68, 0.9); color: #fff; border-radius: 50%;
+            font-size: 11px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;
+        }
+        .engine-grid-item:hover .engine-delete-badge { opacity: 1; }
+
+        .engine-icon-wrapper {
+            width: 42px; height: 42px; background: rgba(255, 255, 255, 0.8); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-weight: bold; border: 1px solid rgba(255,255,255,0.6);
+        }
+        .engine-icon-wrapper img { width: 22px; height: 22px; object-fit: contain; }
+        .engine-name-label { font-size: 0.75rem; color: var(--text-main); text-align: center; font-weight: 500; }
+
+        .engine-icon-wrapper.add-btn-style {
+            background: rgba(255, 255, 255, 0.35);
+            border: 1px dashed rgba(0, 0, 0, 0.15);
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            font-weight: 300;
+        }
+        .engine-icon-wrapper.add-btn-style:hover {
+            background: rgba(255, 255, 255, 0.6);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .links-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 24px 16px; width: 100%; }
+        @media (max-width: 900px) { .links-grid { grid-template-columns: repeat(6, 1fr); } }
+        @media (max-width: 700px) { .links-grid { grid-template-columns: repeat(4, 1fr); } }
+
+        .card-inner { display: flex; flex-direction: column; align-items: center; cursor: pointer; gap: 8px; transition: transform 0.2s ease; }
+        .card-inner:hover { transform: translateY(-4px); }
+
+        .icon-box {
+            width: 68px; height: 68px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-weight: 500; font-size: 1.7rem; color: #fff; background-size: cover; background-position: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2); overflow: hidden;
+        }
+        .icon-box img { width: 100%; height: 100%; object-fit: cover; }
+        .card-name { font-size: 0.8rem; color: #ffffff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
+
+        .context-menu {
+            position: fixed; background: rgba(255, 255, 255, 0.45); border: 1px solid var(--panel-border);
+            border-radius: 12px; padding: 5px 0; min-width: 150px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(var(--blur-strength)); -webkit-backdrop-filter: blur(var(--blur-strength)); z-index: 2000; display: none;
+        }
+        .context-menu-item { padding: 10px 16px; font-size: 0.88rem; color: var(--text-main); cursor: pointer; font-weight: 500; }
+        .context-menu-item:hover { background: var(--accent-color); color: #ffffff; }
+
+        .modal-overlay {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.12); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 3000; display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        
+        .modal-box {
+            background: rgba(255, 255, 255, 0.45); 
+            border: 1px solid var(--panel-border);
+            padding: 30px 24px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.12);
+            backdrop-filter: blur(var(--blur-strength));
+            -webkit-backdrop-filter: blur(var(--blur-strength));
+            color: var(--text-main);
+        }
+
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            padding-left: 2px;
+        }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+        .form-label {
+            width: 76px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            flex-shrink: 0;
+        }
+        .form-control-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 16px;
+            border-radius: 12px;
+            color: #000000;
+            outline: none;
+            font-size: 0.95rem;
+            font-weight: 400;
+            transition: all 0.2s ease;
+        }
+        .modal-input:focus {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 122, 255, 0.3);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .modal-input::placeholder { color: #aaaaaa; }
+
+        .modal-input.has-suffix { padding-right: 90px; }
+        .input-suffix-btn {
+            position: absolute;
+            right: 6px;
+            background: transparent;
+            border: none;
+            color: #222222;
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .input-suffix-btn:hover { background: rgba(0,0,0,0.05); }
+
+        .color-palette-container {
+            display: flex;
+            gap: 9px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .color-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .color-dot:hover { transform: scale(1.15); }
+        .color-dot.active {
+            box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--accent-color);
+            transform: scale(1.08);
+        }
+        .color-dot.gradient-picker {
+            background: linear-gradient(135deg, #007aff 0%, #34c759 50%, #ffcc00 100%);
+        }
+
+        .preview-area-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 24px;
+            padding-top: 8px;
+        }
+        .preview-item-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .preview-box-shell {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+        
+        .preview-box-shell.text-card-style {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 3px solid #ffffff;
+        }
+        .select-check-badge {
+            position: absolute;
+            bottom: -3px; right: -3px;
+            width: 18px; height: 18px;
+            background: #ffffff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .select-check-badge::after {
+            content: ''; width: 8px; height: 4px;
+            border-left: 2px solid var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
+            transform: rotate(-45deg) translate(0.5px, -0.5px);
+        }
+
+        .preview-box-shell.upload-card-style {
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(0,0,0,0.08);
+            font-size: 1.6rem;
+            color: #333333;
+        }
+        .preview-box-shell.upload-card-style:hover {
+            background: rgba(255,255,255,0.5);
+            border-color: rgba(0,122,255,0.3);
+        }
+        .preview-box-shell img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 15px;
+        }
+
+        .preview-label-text {
+            font-size: 0.78rem;
+            color: #222222;
+            font-weight: 400;
+        }
+
+        .modal-actions { text-align: right; margin-top: 28px; }
+        .modal-btn { 
+            padding: 10px 24px; border-radius: 12px; border: none; cursor: pointer; font-size: 0.92rem; font-weight: 500; transition: all 0.2s;
+        }
+        .btn-cancel { background: rgba(0,0,0,0.05); color: #333333; }
+        .btn-cancel:hover { background: rgba(0,0,0,0.09); }
+        .btn-confirm { background: var(--accent-color); color: white; margin-left: 10px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15); }
+        .btn-confirm:hover { background: #0063cc; }
+    </style>
+</head>
+<body id="bodyWall">
+
+<input type="file" id="localWallpaperInput" class="hidden-file-input" accept="image/*" onchange="handleLocalWallpaperSelect(this)">
+<input type="file" id="localIconInput" class="hidden-file-input" accept="image/*" onchange="handleLocalIconSelect(this)">
+
+<div class="top-wallpaper-btn" title="上传本地自定义壁纸" onclick="triggerLocalWallpaper()">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+</div>
+
+<div class="main-layout">
+    <div class="header-text-area">
+        <div class="main-welcome-title">上网，从这里开始！</div>
+        <div class="sub-poem-line" id="dynamicInfo">正在加载信息...</div>
+    </div>
+
+    <div class="search-wrapper">
+        <div class="search-container">
+            <div class="search-engine-selector" id="engineSelector" onclick="toggleEngineMenu(event)">
+                <div class="current-engine-icon" id="currentEngineIcon"></div>
+                <div class="arrow-down-icon">▼</div>
+            </div>
+            <div class="search-input-cell">
+                <input type="text" id="searchInput" placeholder="正在配置默认引擎..." onkeydown="if(event.keyCode==13) handleSearch()">
+            </div>
+            <button class="search-submit-btn" onclick="handleSearch()">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+        </div>
+        <div class="horizontal-engine-menu" id="horizontalMenu"></div>
+    </div>
+
+    <div class="links-grid" id="linksGrid"></div>
+</div>
+
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" onclick="openAddModal()">添加图标</div>
+    <div class="context-menu-item" id="menuDel" style="color: #ef4444; border-top: 1px solid rgba(0,0,0,0.05);" onclick="deleteSelectedCard()">删除该图标</div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="modal-title">添加网址快捷图标</div>
+        
+        <div class="form-row">
+            <div class="form-label">网址</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newSiteUrl" class="modal-input has-suffix" placeholder="https://">
+                <button class="input-suffix-btn" onclick="alert('已模拟获取网站图标！')">获取图标</button>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-label">名称</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newSiteName" class="modal-input" placeholder="网站名称" oninput="updateLivePreview()">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-label">图标颜色</div>
+            <div class="form-control-wrapper">
+                <div class="color-palette-container">
+                    <div class="color-dot active" style="background: #007aff;" data-color="#007aff" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #ffcc00;" data-color="#ffcc00" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #ff3b30;" data-color="#ff3b30" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #5856d6;" data-color="#5856d6" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #34c759;" data-color="#34c759" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #002d62;" data-color="#002d62" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #c5b358;" data-color="#c5b358" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #3a2322;" data-color="#3a2322" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #af1b1b;" data-color="#af1b1b" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #0d47a1;" data-color="#0d47a1" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #a3e4d7;" data-color="#a3e4d7" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot" style="background: #e5e7eb;" data-color="#e5e7eb" onclick="changeSelectedColor(this)"></div>
+                    <div class="color-dot gradient-picker" data-color="linear-gradient(135deg, #007aff, #34c759)" onclick="changeSelectedColor(this)"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-bottom: 20px;">
+            <div class="form-label">图标文字</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newSiteText" class="modal-input" placeholder="A" maxlength="2" oninput="updateLivePreview()">
+            </div>
+        </div>
+
+        <div class="preview-area-row">
+            <div class="preview-item-card" onclick="switchIconType('text')">
+                <div class="preview-box-shell text-card-style" id="liveTextPreview">
+                    A
+                    <div class="select-check-badge" id="textCheckBadge"></div>
+                </div>
+                <div class="preview-label-text">文字图标</div>
+            </div>
+
+            <div class="preview-item-card" onclick="triggerLocalIcon()">
+                <div class="preview-box-shell upload-card-style" id="liveUploadPreview">
+                    +
+                    <div class="select-check-badge" id="uploadCheckBadge" style="display:none;"></div>
+                </div>
+                <div class="preview-label-text">上传</div>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeModal('addModal')">取消</button>
+            <button class="modal-btn btn-confirm" onclick="saveNewSite()">保存图标</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="addEngineModal">
+    <div class="modal-box">
+        <div class="modal-title">添加自定义搜索引擎</div>
+        
+        <div class="form-row">
+            <div class="form-label">引擎名称</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newEngineName" class="modal-input" placeholder="例如：秘迹搜索">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-label">搜索链接</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newEngineUrl" class="modal-input" placeholder="例如：https://mijisou.com/?q=">
+            </div>
+        </div>
+        
+        <div class="form-row" style="margin-bottom: 20px;">
+            <div class="form-label">图标链接</div>
+            <div class="form-control-wrapper">
+                <input type="text" id="newEngineIcon" class="modal-input" placeholder="输入网址的 favicon.ico 链接 (可选)">
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="modal-btn btn-cancel" onclick="closeModal('addEngineModal')">取消</button>
+            <button class="modal-btn btn-confirm" onclick="saveNewEngine()">保存引擎</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. 定义名言库
+    const poemLibrary = [
+        "落霞与孤鹜齐飞，秋水共长天一色。——王勃《滕王阁序》",
+        "路漫漫其修远兮，吾将上下而求索。——屈原《离骚》",
+        "海内存知己，天涯若比邻。——王勃《送杜少府之任蜀州》",
+        "博观而约取，厚积而薄发。——苏轼《稼说》",
+        "星光不问赶路人，时光不负有心人。",
+        "且将新火试新茶，诗酒趁年华。——苏轼《望江南》",
+        "纸上得来终觉浅，绝知此事要躬行。——陆游《冬夜读书示子聿》"
+    ];
+
+    let chosenColor = "#007aff";
+    let temporaryUploadedIconBase64 = "";
+    let currentIconMode = "text";
+
+    function updateDynamicInfo() {
+        const weeks = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        
+        // 每次调用随机抽取名言
+        const randomPoem = poemLibrary[Math.floor(Math.random() * poemLibrary.length)];
+        
+        document.getElementById('dynamicInfo').innerText = `${now.getMonth() + 1}月${now.getDate()}日 ${weeks[now.getDay()]} ${timeStr}  |  ${randomPoem}`;
+    }
+    // 每分钟自动更新时间和名言
+    setInterval(updateDynamicInfo, 60000);
+
+    function triggerLocalWallpaper() { document.getElementById('localWallpaperInput').click(); }
+    function handleLocalWallpaperSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('bodyWall').style.backgroundImage = `url('${e.target.result}')`;
+                try { localStorage.setItem('itab_custom_wallpaper_v8', e.target.result); } catch(err){}
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function triggerLocalIcon() { document.getElementById('localIconInput').click(); }
+    function handleLocalIconSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                temporaryUploadedIconBase64 = e.target.result;
+                const uBox = document.getElementById('liveUploadPreview');
+                uBox.innerHTML = `<img src="${temporaryUploadedIconBase64}"><div class="select-check-badge" id="uploadCheckBadge"></div>`;
+                switchIconType('upload');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function changeSelectedColor(element) {
+        document.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+        element.classList.add('active');
+        chosenColor = element.getAttribute('data-color');
+        
+        const preview = document.getElementById('liveTextPreview');
+        if(chosenColor.includes('gradient')) {
+            preview.style.background = chosenColor;
+        } else {
+            preview.style.backgroundColor = chosenColor;
+            preview.style.background = 'none';
+        }
+        switchIconType('text');
+    }
+
+    function updateLivePreview() {
+        const txtInput = document.getElementById('newSiteText').value.trim();
+        const nameInput = document.getElementById('newSiteName').value.trim();
+        const preview = document.getElementById('liveTextPreview');
+        
+        const badgeHtml = `<div class="select-check-badge" id="textCheckBadge" style="${currentIconMode==='text'?'':'display:none;'}"></div>`;
+        if (txtInput) {
+            preview.innerHTML = txtInput + badgeHtml;
+        } else if (nameInput) {
+            preview.innerHTML = nameInput.charAt(0) + badgeHtml;
+        } else {
+            preview.innerHTML = "A" + badgeHtml;
+        }
+    }
+
+    function switchIconType(mode) {
+        currentIconMode = mode;
+        const tBadge = document.getElementById('textCheckBadge');
+        const uBadge = document.getElementById('uploadCheckBadge');
+        const tShell = document.getElementById('liveTextPreview');
+        
+        if(mode === 'text') {
+            if(tBadge) tBadge.style.display = 'flex';
+            if(uBadge) uBadge.style.display = 'none';
+            tShell.style.border = "3px solid #ffffff";
+        } else {
+            if(tBadge) tBadge.style.display = 'none';
+            if(uBadge) uBadge.style.display = 'flex';
+            tShell.style.border = "3px solid transparent";
+        }
+    }
+
+    const defaultLinks = [
+        { name: "Eira", url: "https://www.eirayun.top", bgColor: "#ff6f61", txt: "Eira", customImg: "" },
+        { name: "知乎", url: "https://www.zhihu.com", bgColor: "#1e80ff", txt: "知", customImg: "" },
+        { name: "豆瓣", url: "https://www.douban.com", bgColor: "#00b51d", txt: "豆", customImg: "" },
+        { name: "GitHub", url: "https://github.com", bgColor: "#181717", txt: "Git", customImg: "" },
+        { name: "哔哩哔哩", url: "https://www.bilibili.com", bgColor: "#f25d8e", txt: "哔", customImg: "" },
+        { name: "V2EX", url: "https://v2ex.com", bgColor: "#444444", txt: "V", customImg: "" }
+    ];
+
+    const defaultEngines = [
+        { id: "bing", name: "必应", url: "https://cn.bing.com/search?q=", icon: "https://cn.bing.com/favicon.ico" },
+        { id: "google", name: "Google", url: "https://www.google.com/search?q=", icon: "https://www.google.com/favicon.ico" },
+        { id: "baidu", name: "百度", url: "https://www.baidu.com/s?wd=", icon: "https://www.baidu.com/favicon.ico" }
+    ];
+
+    let myLinks = JSON.parse(localStorage.getItem('itab_desk_links_v8')) || defaultLinks;
+    let myEngines = JSON.parse(localStorage.getItem('itab_desk_engines_v8')) || defaultEngines;
+    let activeEngine = myEngines[0];
+    let rightClickedIndex = null;
+
+    function selectEngine(eng) {
+        if(!eng || !eng.url) return;
+        activeEngine = eng;
+        const iconContainer = document.getElementById('currentEngineIcon');
+        
+        if (eng.icon && eng.icon.startsWith('http')) {
+            iconContainer.style.backgroundImage = `url('${eng.icon}')`;
+            iconContainer.innerText = "";
+            iconContainer.style.backgroundColor = "transparent";
+        } else {
+            iconContainer.style.backgroundImage = "none";
+            iconContainer.innerText = eng.name ? eng.name.charAt(0) : "搜";
+            iconContainer.style.backgroundColor = "var(--accent-color)";
+        }
+        
+        document.getElementById('searchInput').placeholder = `使用 ${eng.name || '搜索'} 搜索...`;
+        document.getElementById('horizontalMenu').classList.remove('show');
+    }
+
+    function renderEngines() {
+        const menu = document.getElementById('horizontalMenu');
+        menu.innerHTML = "";
+        myEngines.forEach((eng, index) => {
+            const item = document.createElement('div');
+            item.className = "engine-grid-item";
+            item.onclick = () => selectEngine(eng);
+
+            const delBadge = document.createElement('div');
+            delBadge.className = "engine-delete-badge";
+            delBadge.innerText = "×";
+            delBadge.onclick = (e) => { 
+                e.stopPropagation(); 
+                myEngines.splice(index, 1); 
+                localStorage.setItem('itab_desk_engines_v8', JSON.stringify(myEngines));
+                renderEngines();
+                if (activeEngine.id === eng.id) {
+                    selectEngine(myEngines[0]);
+                }
+            };
+            item.appendChild(delBadge);
+
+            const wrap = document.createElement('div');
+            wrap.className = "engine-icon-wrapper";
+            if (eng.icon && eng.icon.startsWith('http')) {
+                wrap.innerHTML = `<img src="${eng.icon}">`;
+            } else {
+                wrap.innerHTML = `<span style="color:#333; font-size:13px; font-weight:600;">${eng.name.charAt(0)}</span>`;
+            }
+            item.appendChild(wrap);
+
+            const lbl = document.createElement('div');
+            lbl.className = "engine-name-label"; lbl.innerText = eng.name;
+            item.appendChild(lbl);
+            menu.appendChild(item);
+        });
+
+        const addBtnItem = document.createElement('div');
+        addBtnItem.className = "engine-grid-item";
+        addBtnItem.onclick = (e) => { e.stopPropagation(); openAddEngineModal(); };
+        const addWrap = document.createElement('div');
+        addWrap.className = "engine-icon-wrapper add-btn-style";
+        addWrap.innerText = "+";
+        addBtnItem.appendChild(addWrap);
+        const addLbl = document.createElement('div');
+        addLbl.className = "engine-name-label";
+        addLbl.innerText = "添加";
+        addBtnItem.appendChild(addLbl);
+        menu.appendChild(addBtnItem);
+    }
+
+    function toggleEngineMenu(e) { e.stopPropagation(); document.getElementById('horizontalMenu').classList.toggle('show'); }
+    
+    function handleSearch() {
+        const query = document.getElementById('searchInput').value.trim();
+        if(query && activeEngine) {
+            window.open(activeEngine.url + encodeURIComponent(query), '_blank');
+        }
+    }
+
+    function renderDesktop() {
+        const grid = document.getElementById('linksGrid');
+        grid.innerHTML = "";
+        myLinks.forEach((link, index) => {
+            const card = document.createElement('div');
+            card.className = "card-inner";
+            card.onclick = () => window.open(link.url, '_blank');
+            card.oncontextmenu = (e) => {
+                e.preventDefault(); e.stopPropagation(); rightClickedIndex = index;
+                document.getElementById('menuDel').style.display = "block";
+                showContextMenu(e.clientX, e.clientY);
+            };
+
+            let finalIcon = link.customImg 
+                ? `<div class="icon-box"><img src="${link.customImg}"></div>` 
+                : `<div class="icon-box" style="background: ${link.bgColor}">${link.txt}</div>`;
+
+            card.innerHTML = `${finalIcon}<div class="card-name">${link.name}</div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    const contextMenu = document.getElementById('contextMenu');
+    function showContextMenu(x, y) { contextMenu.style.left = x + "px"; contextMenu.style.top = y + "px"; contextMenu.style.display = "block"; }
+
+    document.oncontextmenu = function(e) { e.preventDefault(); rightClickedIndex = null; document.getElementById('menuDel').style.display = "none"; showContextMenu(e.clientX, e.clientY); };
+    document.addEventListener('click', () => { contextMenu.style.display = "none"; document.getElementById('horizontalMenu').classList.remove('show'); });
+
+    function openAddModal() { 
+        temporaryUploadedIconBase64 = "";
+        currentIconMode = "text";
+        document.getElementById('liveUploadPreview').innerHTML = `+<div class="select-check-badge" id="uploadCheckBadge" style="display:none;"></div>`;
+        switchIconType('text');
+        document.getElementById('addModal').classList.add('show'); 
+    }
+
+    function openAddEngineModal() {
+        document.getElementById('horizontalMenu').classList.remove('show');
+        document.getElementById('addEngineModal').classList.add('show');
+    }
+    
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function saveNewSite() {
+        const name = document.getElementById('newSiteName').value.trim();
+        let url = document.getElementById('newSiteUrl').value.trim();
+        let text = document.getElementById('newSiteText').value.trim();
+        
+        if(!name || !url) return;
+        if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        if(!text) text = name.charAt(0);
+
+        myLinks.push({
+            name: name, url: url,
+            bgColor: chosenColor,
+            txt: text,
+            customImg: (currentIconMode === 'upload') ? temporaryUploadedIconBase64 : ""
+        });
+
+        localStorage.setItem('itab_desk_links_v8', JSON.stringify(myLinks));
+        renderDesktop();
+        closeModal('addModal');
+        document.getElementById('newSiteName').value = '';
+        document.getElementById('newSiteUrl').value = '';
+        document.getElementById('newSiteText').value = '';
+    }
+
+    function saveNewEngine() {
+        const name = document.getElementById('newEngineName').value.trim();
+        let url = document.getElementById('newEngineUrl').value.trim();
+        let icon = document.getElementById('newEngineIcon').value.trim();
+        if(!name || !url) { alert('请填写搜索引擎名称和对应的搜索URL！'); return; }
+        if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        myEngines.push({ id: "engine_" + Date.now(), name: name, url: url, icon: icon });
+        localStorage.setItem('itab_desk_engines_v8', JSON.stringify(myEngines));
+        renderEngines();
+        closeModal('addEngineModal');
+        document.getElementById('newEngineName').value = '';
+        document.getElementById('newEngineUrl').value = '';
+        document.getElementById('newEngineIcon').value = '';
+    }
+
+    function deleteSelectedCard() {
+        if(rightClickedIndex !== null) {
+            myLinks.splice(rightClickedIndex, 1);
+            localStorage.setItem('itab_desk_links_v8', JSON.stringify(myLinks));
+            renderDesktop();
+        }
+    }
+
+    window.onload = function() {
+        const savedWallpaper = localStorage.getItem('itab_custom_wallpaper_v8');
+        if (savedWallpaper) document.getElementById('bodyWall').style.backgroundImage = `url('${savedWallpaper}')`;
+        updateDynamicInfo(); renderEngines(); selectEngine(myEngines[0]); renderDesktop();
+    }
+</script>
+</body>
+</html>

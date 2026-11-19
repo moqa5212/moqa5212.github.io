@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNG / JPG 转 WEBP</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #e0f2fe 0%, #fef08a 50%, #bae6fd 100%);
+            --panel-bg: rgba(255, 255, 255, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.6);
+            --text-main: #4a3728;
+            --text-sub: #7c6e65;
+            --theme-color: #38bdf8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+            text-align: center;
+        }
+
+        .header-zone { 
+            margin-bottom: 30px; 
+        }
+        
+        .main-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .steps-desc { 
+            font-size: 13px; 
+            color: var(--text-sub); 
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            margin-bottom: 20px;
+        }
+
+        .upload-zone {
+            padding: 60px 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover { background: rgba(255, 255, 255, 0.85); }
+        .upload-zone.dragover { border: 2px dashed var(--theme-color); background: rgba(255, 255, 255, 0.9); }
+        
+        /* 还原截图中的轻量卡片/文件夹扁平化图标 */
+        .upload-icon { 
+            width: 50px; 
+            height: 50px; 
+            margin: 0 auto 15px; 
+            opacity: 0.5; 
+        }
+        
+        .upload-text { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+        .upload-support { font-size: 12px; color: var(--text-sub); }
+        #fileInput { display: none; }
+
+        .control-zone { padding: 24px 30px; }
+        .control-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
+        .slider-container { flex: 1; min-width: 260px; display: flex; align-items: center; gap: 15px; }
+        .slider-label { font-size: 13px; color: var(--text-sub); }
+        
+        .range-slider {
+            flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.06); outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            height: 16px; width: 16px; border-radius: 50%; background: var(--theme-color); cursor: pointer; -webkit-appearance: none;
+            box-shadow: 0 2px 6px rgba(56, 189, 248, 0.4);
+        }
+        .quality-val { font-size: 14px; font-weight: 600; min-width: 35px; text-align: left; }
+
+        .sub-info-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-end; /* 去掉左边提示后，将复选框靠右对齐 */
+            padding-top: 12px; 
+            font-size: 12px; 
+            color: var(--text-sub); 
+            margin-top: 15px;
+        }
+        .checkbox-container { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+        .btn {
+            padding: 10px 24px; border-radius: 20px; font-size: 13px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s;
+            background: #fff; color: var(--text-main); box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05);
+        }
+        .btn:hover:not(:disabled) { background: rgba(255,255,255,0.9); transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .queue-zone { width: 100%; max-height: 300px; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .queue-item {
+            display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; 
+            background: rgba(255,255,255,0.5); border-radius: 16px; border: 1px solid rgba(255,255,255,0.5); text-align: left;
+        }
+        .file-info { display: flex; flex-direction: column; gap: 2px; max-width: 70%; }
+        .file-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-size { font-size: 11px; color: var(--text-sub); }
+        .status-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 500; }
+        .status-ready { background: #bbf7d0; color: #166534; }
+        .status-loading { background: #fef08a; color: #a16207; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-zone">
+            <h1 class="main-title">PNG / JPG 转 WEBP</h1>
+            <div class="steps-desc">选择图片 → 自动处理 → 一键打包下载</div>
+        </div>
+
+        <div class="panel upload-zone" id="dropZone">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18m-18 0v-4.25m0 4.25v4.25a2.25 2.25 0 002.25 2.25h13.5a2.25 2.25 0 002.25-2.25V13.5m-18 0V9.75A2.25 2.25 0 014.5 7.5h3.182c.482 0 .942.21 1.258.576l1.378 1.6c.158.183.388.288.629.288h6.553a2.25 2.25 0 012.25 2.25V13.5" />
+            </svg>
+            <div class="upload-text">点击或拖拽图片到这里</div>
+            <div class="upload-support">支持 PNG、JPG、JPEG、HEIC 等格式</div>
+            <input type="file" id="fileInput" multiple accept="image/*">
+        </div>
+
+        <div class="queue-zone" id="queueZone"></div>
+
+        <div class="panel control-zone">
+            <div class="control-row">
+                <div class="slider-container">
+                    <span class="slider-label">质量</span>
+                    <input type="range" class="range-slider" id="qualitySlider" min="1" max="100" value="80">
+                    <span class="quality-val" id="qualityNum">80%</span>
+                </div>
+                <button class="btn" id="downloadBtn" disabled>全部下载</button>
+            </div>
+            
+            <div class="sub-info-row">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="compressCheck" checked>
+                    <span>限制最大宽度(原图比例)</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const queueZone = document.getElementById('queueZone');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityNum = document.getElementById('qualityNum');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const compressCheck = document.getElementById('compressCheck');
+
+        let convertedFiles = []; 
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files));
+        
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if(e.dataTransfer.files.length > 0) handleFileSelect(e.dataTransfer.files);
+        });
+
+        qualitySlider.addEventListener('input', (e) => {
+            qualityNum.innerText = e.target.value + '%';
+        });
+
+        async function handleFileSelect(files) {
+            const arrFiles = Array.from(files);
+            if(arrFiles.length === 0) return;
+
+            convertedFiles = [];
+            queueZone.innerHTML = '';
+            downloadBtn.disabled = true;
+
+            for(let i=0; i<arrFiles.length; i++) {
+                let file = arrFiles[i];
+                
+                const itemDom = document.createElement('div');
+                itemDom.className = 'queue-item';
+                const fileId = `file-${Date.now()}-${i}`;
+                itemDom.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-name">${file.name}</span>
+                        <span class="file-size">正在读取原始文件 (${(file.size/1024).toFixed(1)} KB)</span>
+                    </div>
+                    <span class="status-badge status-loading" id="${fileId}">处理中...</span>
+                `;
+                queueZone.appendChild(itemDom);
+
+                try {
+                    if (file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic') {
+                        document.getElementById(fileId).innerText = '解析HEIC...';
+                        const conversionResult = await heic2any({ blob: file, toType: "image/jpeg" });
+                        file = Array.isArray(conversionResult) ? conversionResult[0] : conversionResult;
+                    }
+
+                    document.getElementById(fileId).innerText = '转码WebP...';
+                    const qValue = qualitySlider.value / 100;
+                    const webpBlob = await processImageToWebp(file, qValue, compressCheck.checked);
+
+                    const newName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                    convertedFiles.push({ blob: webpBlob, name: newName });
+
+                    const badge = document.getElementById(fileId);
+                    badge.innerText = '转换成功';
+                    badge.className = 'status-badge status-ready';
+                    itemDom.querySelector('.file-size').innerText = `转换后大小: ${(webpBlob.size/1024).toFixed(1)} KB`;
+
+                } catch (error) {
+                    console.error(error);
+                    const badge = document.getElementById(fileId);
+                    badge.innerText = '转换失败';
+                    badge.style.background = '#fecaca';
+                    badge.style.color = '#991b1b';
+                }
+            }
+
+            if(convertedFiles.length > 0) {
+                downloadBtn.disabled = false;
+            }
+        }
+
+        function processImageToWebp(file, quality, limitWidth) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        let targetWidth = img.width;
+                        let targetHeight = img.height;
+
+                        if (limitWidth && targetWidth > 1920) {
+                            targetHeight = (1920 / targetWidth) * targetHeight;
+                            targetWidth = 1920;
+                        }
+
+                        canvas.width = targetWidth;
+                        canvas.height = targetHeight;
+                        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+                        canvas.toBlob((blob) => {
+                            if(blob) resolve(blob);
+                            else reject(new Error('Canvas 转 Blob 失败'));
+                        }, 'image/webp', quality);
+                    };
+                    img.onerror = () => reject(new Error('图片加载失败'));
+                };
+                reader.onerror = () => reject(new Error('文件读取失败'));
+            });
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if(convertedFiles.length === 0) return;
+
+            if(convertedFiles.length === 1) {
+                const item = convertedFiles[0];
+                const url = URL.createObjectURL(item.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = item.name;
+                a.click();
+                URL.revokeObjectURL(url);
+            } else {
+                const zip = new JSZip();
+                convertedFiles.forEach(item => {
+                    zip.file(item.name, item.blob);
+                });
+                zip.generateAsync({type: "blob"}).then((content) => {
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "image_toolbox_export.zip";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

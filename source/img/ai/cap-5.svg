@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="学习与能力提升">
+  <defs>
+    <linearGradient id="bg5" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe6b3"/>
+      <stop offset="1" stop-color="#fff3d6"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg5)"/>
+  <rect x="28" y="70" width="72" height="30" rx="7" fill="#ffffff" stroke="#f6b93b" stroke-width="4"/>
+  <line x1="64" y1="72" x2="64" y2="98" stroke="#f6b93b" stroke-width="4"/>
+  <polygon points="64,30 100,46 64,62 28,46" fill="#f6b93b"/>
+  <line x1="88" y1="42" x2="88" y2="60" stroke="#e79b1e" stroke-width="4"/>
+  <circle cx="88" cy="62" r="4" fill="#e79b1e"/>
+</svg>

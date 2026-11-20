@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="信息获取与整理">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#cfe7fb"/>
+      <stop offset="1" stop-color="#eaf6ff"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg1)"/>
+  <rect x="24" y="30" width="54" height="68" rx="9" fill="#ffffff"/>
+  <rect x="34" y="45" width="34" height="5" rx="2.5" fill="#c3ddf7"/>
+  <rect x="34" y="57" width="34" height="5" rx="2.5" fill="#c3ddf7"/>
+  <rect x="34" y="69" width="22" height="5" rx="2.5" fill="#c3ddf7"/>
+  <circle cx="84" cy="76" r="16" fill="#ffffff" fill-opacity="0.55" stroke="#4a90e2" stroke-width="7"/>
+  <line x1="95" y1="88" x2="105" y2="98" stroke="#4a90e2" stroke-width="8" stroke-linecap="round"/>
+</svg>

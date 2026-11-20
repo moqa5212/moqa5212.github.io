@@ -37,3 +37,16 @@ if nav
         a(href='https://github.com/jerryc127/hexo-theme-butterfly')= `Butterfly${ v ? ' ' + v.theme : '' }`
   if theme.footer.custom_text
     .footer_custom_text!= theme.footer.custom_text
+
+
+if theme.mermaid && theme.mermaid.enable
+script(src=`https://unpkg.com/mermaid@11.5.0/dist/mermaid.min.js`)
+script.
+    if (window.mermaid) {
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: '#{theme.mermaid.theme || 'default'}',
+        securityLevel: 'loose',
+        flowchart: { useMaxWidth: true, htmlLabels: true }
+    });
+    }

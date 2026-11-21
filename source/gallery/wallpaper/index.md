@@ -6,9 +6,11 @@ cover: https://eirayun.top/gallery/wallpaper/wallhaven-nmovwy.webp
 
 {% gallery %}
 
-![](https://cdn.jsdelivr.net/gh/moqa5212/EiraGallery@main/imgs/20260617231322086.webp)
-![](https://cdn.jsdelivr.net/gh/moqa5212/EiraGallery@main/imgs/20260703212728278.webp)
-![](https://cdn.jsdelivr.net/gh/moqa5212/EiraGallery@main/imgs/wallhaven-577gm7.webp)
+![](https://img.eirayun.top/2026/11/1795280845.jpg)
+![](https://img.eirayun.top/2026/11/1795280899.jpg)
+![](https://img.eirayun.top/2026/11/1795280940.jpg)
+
+
 
 
 {% endgallery %}

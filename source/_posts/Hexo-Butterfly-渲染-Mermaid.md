@@ -3,7 +3,6 @@ title: 在 Hexo + Butterfly 中渲染 Mermaid 图表
 tags:
   - Hexo
   - Butterfly
-  - Mermaid
   - 教程
 categories:
   - Hexo
